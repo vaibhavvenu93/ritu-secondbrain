@@ -223,6 +223,40 @@ function getFollowUps(
    COMPONENT
 ========================================================= */
 
+
+function getBrainPageContext(pathname: string) {
+  switch (pathname) {
+    case "/company":
+      return {
+        page: "company",
+        label: "Company \u00B7 Operating View",
+      };
+
+    case "/intelligence":
+      return {
+        page: "intelligence",
+        label: "Intelligence \u00B7 Company Signals",
+      };
+
+    case "/execution":
+      return {
+        page: "execution",
+        label: "Execution \u00B7 Commitments & Initiatives",
+      };
+
+    case "/studio":
+      return {
+        page: "studio",
+        label: "Studio \u00B7 Thinking Space",
+      };
+
+    default:
+      return {
+        page: "today",
+        label: "Today \u00B7 MD's Office",
+      };
+  }
+}
 export default function SecondBrainAssistant() {
   const [open, setOpen] =
     useState(false);
@@ -357,11 +391,9 @@ useEffect(() => {
               query: finalQuery,
 
               context: {
-                page:
-                  window.location.pathname ===
-                  "/company"
-                    ? "company"
-                    : "today",
+                page: getBrainPageContext(
+                  window.location.pathname
+                ).page,
               },
             }),
           }
@@ -564,12 +596,11 @@ useEffect(() => {
               </span>
 
               <strong>
-                {typeof window !==
-                  "undefined" &&
-                window.location.pathname ===
-                  "/company"
-                  ? "Company · Operating View"
-                  : "Today · MD's Office"}
+                {typeof window !== "undefined"
+                  ? getBrainPageContext(
+                      window.location.pathname
+                    ).label
+                  : "Today \u00B7 MD's Office"}
               </strong>
             </div>
 

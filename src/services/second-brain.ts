@@ -5,6 +5,11 @@ import {
 } from "@/data/gyandhara";
 
 import {
+  intelligenceSignals,
+  mdMemories,
+  opportunities,
+} from "@/data/intelligence-data";
+import {
   getEntity,
   getExecutiveImpact,
   getImpactMap,
@@ -331,6 +336,568 @@ export function resolveBrainEntity(
   return undefined;
 }
 
+
+/* =========================================================
+   INTELLIGENCE + MD MEMORY
+
+   Deterministic reasoning over:
+   - operating signals
+   - surfaced opportunities
+   - illustrative MD decision memory
+
+   This layer does not create new company truth.
+========================================================= */
+
+function intelligenceEvidence(
+  id: string,
+  label: string,
+  value: string,
+  detail: string,
+  provenance: string
+): BrainEvidence {
+  return {
+    id,
+    type: "derived",
+    label,
+    value,
+    detail,
+    provenance,
+  };
+}
+
+function answerIntelligenceQuery(
+  query: string,
+  context: BrainQueryContext
+): BrainAnswer | undefined {
+  const q = normalise(query);
+
+  const baseContext: BrainQueryContext = {
+    ...context,
+    page: context.page ?? "intelligence",
+    section: context.section ?? "intelligence",
+  };
+
+  const answer = (
+    partial: Omit<
+      BrainAnswer,
+      "query" | "context" | "generatedBy"
+    >
+  ): BrainAnswer => ({
+    query,
+    ...partial,
+    context: baseContext,
+    generatedBy: "deterministic-company-brain",
+  });
+
+  /* -------------------------------------------------------
+     COMPANY INTELLIGENCE BRIEF
+  ------------------------------------------------------- */
+
+  const asksForIntelligenceBrief =
+    q.includes("what changed") ||
+    q.includes("company intelligence") ||
+    q.includes("signals worth") ||
+    q.includes("what matters");
+
+  if (asksForIntelligenceBrief) {
+    return answer({
+      intent: "attention",
+
+      answer:
+        "Four signals currently deserve interpretation. Bihar is 11.2% below plan with the weakness concentrated around Patna and Patna East. Soymeal purchase cost is modelled at ₹42,100/MT versus ₹39,800/MT plan, creating roughly ₹92L of annualised exposure. Amethi utilisation is illustratively 82% against an 85% operating target. Bihar trial-to-repeat is modelled at 54% against a 62% target.",
+
+      summary:
+        "The strongest immediate themes are Bihar recovery and soymeal margin protection; Amethi capacity and farmer repeat are opportunities to investigate rather than conclusions to act on blindly.",
+
+      confidence: "high",
+
+      drivers: intelligenceSignals.map((signal, index) => ({
+        rank: index + 1,
+        title: signal.title,
+        explanation: signal.whyItMatters,
+        impact: `${signal.impact} ${signal.impactLabel}`,
+        health:
+          signal.action === "ACT"
+            ? "risk"
+            : signal.action === "WATCH"
+              ? "watch"
+              : "good",
+        entityIds: [],
+      })),
+
+      evidence: intelligenceSignals.map((signal) =>
+        intelligenceEvidence(
+          signal.id,
+          signal.category,
+          signal.impact,
+          signal.summary,
+          signal.provenance
+        )
+      ),
+
+      recommendations: [
+        {
+          id: "bihar-action-1",
+          title: "Recover Patna East availability",
+          rationale:
+            "The Bihar gap is concentrated enough to intervene before considering broad commercial changes.",
+          owner: "Commercial + Supply Chain",
+          expectedImpact: "₹18L modelled revenue at risk",
+          actionType: "commercial",
+        },
+        {
+          id: "soy-action-1",
+          title: "Reduce soymeal exposure",
+          rationale:
+            "Review purchase positions and premium-SKU sensitivity while the input-cost variance is visible.",
+          owner: "Procurement + Finance",
+          expectedImpact: "₹92L modelled annualised exposure",
+          actionType: "supply",
+        },
+      ],
+
+      graphPath: [],
+    });
+  }
+
+  /* -------------------------------------------------------
+     OPPORTUNITY HUNTER
+  ------------------------------------------------------- */
+
+  const asksForOpportunities =
+    q.includes("opportunit") ||
+    q.includes("make or save money") ||
+    q.includes("make money") ||
+    q.includes("save money");
+
+  if (
+    asksForOpportunities &&
+    !q.includes("amethi")
+  ) {
+    return answer({
+      intent: "recommend",
+
+      answer:
+        "The operating model surfaces four opportunities. Two are immediate and measurable: recover ₹18L of modelled revenue at risk through Patna East availability, and protect roughly ₹92L of annualised exposure from soymeal cost pressure. Two are exploratory: identify profitable demand for available Amethi capacity and connect Manthan education to trial, repeat purchase and farmer outcomes.",
+
+      summary:
+        "Recover Bihar revenue, protect premium-SKU economics, then test Amethi capacity and Manthan as structured growth cases.",
+
+      confidence: "high",
+
+      drivers: opportunities.map((opportunity, index) => ({
+        rank: index + 1,
+        title: opportunity.title,
+        explanation: opportunity.description,
+        impact: `${opportunity.value} ${opportunity.valueLabel}`,
+        health:
+          opportunity.confidence === "high"
+            ? "watch"
+            : "good",
+        entityIds: [],
+      })),
+
+      evidence: opportunities.map((opportunity) =>
+        intelligenceEvidence(
+          opportunity.id,
+          opportunity.mode,
+          opportunity.value,
+          opportunity.description,
+          opportunity.confidence
+        )
+      ),
+
+      recommendations: [
+        {
+          id: "bihar-action-1",
+          title: "Restore Patna East availability",
+          rationale:
+            "Recover availability before using price as the lever.",
+          owner: "Commercial + Supply Chain",
+          expectedImpact: "₹18L revenue at risk",
+          actionType: "commercial",
+        },
+        {
+          id: "soy-action-1",
+          title: "Reduce soymeal exposure",
+          rationale:
+            "Review purchase positions and premium-SKU contribution sensitivity.",
+          owner: "Procurement + Finance",
+          expectedImpact: "₹92L annualised exposure",
+          actionType: "supply",
+        },
+      ],
+
+      graphPath: [],
+    });
+  }
+
+  /* -------------------------------------------------------
+     AMETHI OPPORTUNITY
+  ------------------------------------------------------- */
+
+  if (
+    q.includes("amethi") &&
+    (
+      q.includes("opportunit") ||
+      q.includes("capacity") ||
+      q.includes("profitable growth")
+    )
+  ) {
+    const signal = intelligenceSignals.find(
+      (item) => item.id === "signal-amethi"
+    )!;
+
+    return answer({
+      intent: "recommend",
+
+      answer:
+        "Amethi's illustrative utilisation is 82% against an 85% operating target. The opportunity is not simply to fill capacity. Gyandhara should determine which incremental demand produces the best contribution after product mix, geography, distribution cost and input economics are considered.",
+
+      summary:
+        "Treat available Amethi capacity as a constrained growth asset: find the most profitable demand for the next unit of production.",
+
+      confidence: "medium",
+
+      drivers: [
+        {
+          rank: 1,
+          title: "Available operating capacity",
+          explanation:
+            "Illustrative utilisation is 3 points below the operating target.",
+          impact: "3 pts utilisation gap",
+          health: "watch",
+          entityIds: [],
+        },
+        {
+          rank: 2,
+          title: "Demand quality matters more than volume alone",
+          explanation:
+            "Premium-SKU growth and geography expansion should be compared on contribution, not only tonnes sold.",
+          health: "good",
+          entityIds: [],
+        },
+      ],
+
+      evidence: [
+        intelligenceEvidence(
+          signal.id,
+          "Amethi utilisation",
+          signal.impact,
+          signal.summary,
+          signal.provenance
+        ),
+      ],
+
+      recommendations: [
+        {
+          id: "intelligence-amethi-business-case",
+          title: "Build the Amethi capacity business case",
+          rationale:
+            "Compare premium-SKU and geography scenarios on contribution, capacity use and execution requirements.",
+          owner: "Operations + Commercial + Finance",
+          expectedImpact: "Business case required",
+          actionType: "operations",
+        },
+      ],
+
+      graphPath: [],
+    });
+  }
+
+  /* -------------------------------------------------------
+     MANTHAN / FARMER REPEAT
+  ------------------------------------------------------- */
+
+  if (
+    q.includes("manthan") ||
+    q.includes("repeat purchase") ||
+    q.includes("trial to repeat") ||
+    q.includes("trial-to-repeat")
+  ) {
+    const signal = intelligenceSignals.find(
+      (item) => item.id === "signal-manthan"
+    )!;
+
+    return answer({
+      intent: "recommend",
+
+      answer:
+        "The modelled Bihar trial-to-repeat rate is 54% against a 62% target. Manthan creates a natural learning loop: track who was educated, what they trialled, whether they repeated, and where possible the animal or farmer outcome. That turns field education from activity reporting into measurable commercial learning.",
+
+      summary:
+        "Connect education → trial → repeat → outcome so Gyandhara can see which farmer interventions actually change behaviour.",
+
+      confidence: "medium",
+
+      drivers: [
+        {
+          rank: 1,
+          title: "Repeat gap",
+          explanation:
+            "The illustrative operating model shows an 8-point gap between current and target trial-to-repeat.",
+          impact: "8 pts",
+          health: "watch",
+          entityIds: [],
+        },
+        {
+          rank: 2,
+          title: "Manthan can become the measurement mechanism",
+          explanation:
+            "Education interactions can be linked to subsequent trial, repeat and outcome data.",
+          health: "good",
+          entityIds: [],
+        },
+      ],
+
+      evidence: [
+        intelligenceEvidence(
+          signal.id,
+          "Farmer repeat",
+          signal.impact,
+          signal.summary,
+          signal.provenance
+        ),
+      ],
+
+      recommendations: [
+        {
+          id: "intelligence-manthan-loop",
+          title: "Instrument the Manthan learning loop",
+          rationale:
+            "Create cohort-level measurement from education through repeat purchase and farmer outcome.",
+          owner: "Farmer + Commercial",
+          expectedImpact: "Close an illustrative 8-point repeat gap",
+          actionType: "commercial",
+        },
+      ],
+
+      graphPath: [],
+    });
+  }
+
+  /* -------------------------------------------------------
+     MD MEMORY — RAJASTHAN
+  ------------------------------------------------------- */
+
+  if (
+    q.includes("rajasthan") &&
+    (
+      q.includes("decid") ||
+      q.includes("why") ||
+      q.includes("priorit")
+    )
+  ) {
+    const memory = mdMemories.find(
+      (item) => item.id === "memory-rajasthan"
+    )!;
+
+    return answer({
+      intent: "why",
+
+      answer:
+        `${memory.decision} ${memory.rationale}`,
+
+      summary:
+        `Reconsider when ${memory.reconsiderWhen}`,
+
+      confidence: "high",
+
+      drivers: memory.assumptions.map((assumption, index) => ({
+        rank: index + 1,
+        title: `Assumption ${index + 1}`,
+        explanation: assumption,
+        health: "good",
+        entityIds: [],
+      })),
+
+      evidence: [
+        intelligenceEvidence(
+          memory.id,
+          memory.type,
+          memory.date,
+          memory.decision,
+          memory.provenance
+        ),
+      ],
+
+      recommendations: [],
+
+      graphPath: [],
+    });
+  }
+
+  /* -------------------------------------------------------
+     MD MEMORY — BIHAR DISCOUNT
+  ------------------------------------------------------- */
+
+  if (
+    q.includes("bihar") &&
+    q.includes("discount") &&
+    (
+      q.includes("why") ||
+      q.includes("decid") ||
+      q.includes("guardrail")
+    )
+  ) {
+    const memory = mdMemories.find(
+      (item) => item.id === "memory-bihar-discount"
+    )!;
+
+    return answer({
+      intent: "why",
+
+      answer:
+        `${memory.decision} ${memory.rationale}`,
+
+      summary:
+        `Reconsider when ${memory.reconsiderWhen}`,
+
+      confidence: "high",
+
+      drivers: memory.assumptions.map((assumption, index) => ({
+        rank: index + 1,
+        title: `Assumption ${index + 1}`,
+        explanation: assumption,
+        health: "good",
+        entityIds: [],
+      })),
+
+      evidence: [
+        intelligenceEvidence(
+          memory.id,
+          memory.type,
+          "₹41L",
+          memory.rationale,
+          memory.provenance
+        ),
+      ],
+
+      recommendations: [
+        {
+          id: "bihar-action-1",
+          title: "Measure Patna East availability recovery first",
+          rationale:
+            "The remembered decision explicitly separates distribution recovery from broad discount policy.",
+          owner: "Commercial + Supply Chain",
+          expectedImpact: "Protect ₹41L modelled margin exposure",
+          actionType: "commercial",
+        },
+      ],
+
+      graphPath: [],
+    });
+  }
+
+  /* -------------------------------------------------------
+     MD MEMORY — SOYMEAL
+  ------------------------------------------------------- */
+
+  if (
+    q.includes("soymeal") &&
+    (
+      q.includes("decid") ||
+      q.includes("memory") ||
+      q.includes("watchlist")
+    )
+  ) {
+    const memory = mdMemories.find(
+      (item) => item.id === "memory-soymeal"
+    )!;
+
+    return answer({
+      intent: "what",
+
+      answer:
+        `${memory.decision} ${memory.rationale}`,
+
+      summary:
+        `Reconsider when ${memory.reconsiderWhen}`,
+
+      confidence: "high",
+
+      drivers: memory.assumptions.map((assumption, index) => ({
+        rank: index + 1,
+        title: `Assumption ${index + 1}`,
+        explanation: assumption,
+        health: "watch",
+        entityIds: [],
+      })),
+
+      evidence: [
+        intelligenceEvidence(
+          memory.id,
+          memory.type,
+          memory.date,
+          memory.decision,
+          memory.provenance
+        ),
+      ],
+
+      recommendations: [
+        {
+          id: "soy-action-1",
+          title: "Review soymeal exposure",
+          rationale:
+            "The remembered decision calls for premium-SKU contribution sensitivity before changing commercial policy.",
+          owner: "Procurement + Finance",
+          expectedImpact: "₹92L modelled annualised exposure",
+          actionType: "supply",
+        },
+      ],
+
+      graphPath: [],
+    });
+  }
+
+  /* -------------------------------------------------------
+     GENERAL MD MEMORY
+  ------------------------------------------------------- */
+
+  if (
+    q.includes("memory") ||
+    q.includes("past decision") ||
+    q.includes("old decision") ||
+    q.includes("what did we decide")
+  ) {
+    return answer({
+      intent: "what",
+
+      answer:
+        "The demo memory currently preserves three illustrative decision records: Rajasthan expansion was held while existing-market depth improved; Bihar broad discounting was held behind an availability-first intervention; and soymeal was moved onto the margin watchlist pending premium-SKU contribution analysis.",
+
+      summary:
+        "Memory preserves the decision, rationale, assumptions and condition for reconsidering it — not merely the meeting note.",
+
+      confidence: "high",
+
+      drivers: mdMemories.map((memory, index) => ({
+        rank: index + 1,
+        title: memory.title,
+        explanation:
+          `${memory.decision} Reconsider when ${memory.reconsiderWhen}`,
+        health: "good",
+        entityIds: [],
+      })),
+
+      evidence: mdMemories.map((memory) =>
+        intelligenceEvidence(
+          memory.id,
+          memory.type,
+          memory.date,
+          memory.decision,
+          memory.provenance
+        )
+      ),
+
+      recommendations: [],
+
+      graphPath: [],
+    });
+  }
+
+  return undefined;
+}
 /* =========================================================
    METRIC HELPERS
 ========================================================= */
@@ -881,6 +1448,21 @@ export function askSecondBrain(
   query: string,
   context: BrainQueryContext = {}
 ): BrainAnswer {
+  /*
+   * Intelligence and MD Memory get first refusal.
+   * If the question does not belong to that layer,
+   * the existing company reasoning engine continues unchanged.
+   */
+  const intelligenceAnswer =
+    answerIntelligenceQuery(
+      query,
+      context
+    );
+
+  if (intelligenceAnswer) {
+    return intelligenceAnswer;
+  }
+
   const intent =
     detectBrainIntent(query);
 

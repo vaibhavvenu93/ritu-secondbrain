@@ -5,6 +5,7 @@ import {
   Building2,
   Command,
   Lightbulb,
+  Radar,
   Target,
 } from "lucide-react";
 
@@ -13,6 +14,7 @@ import SecondBrainAssistant from "@/components/second-brain-assistant";
 type AppSection =
   | "today"
   | "company"
+  | "intelligence"
   | "execution"
   | "studio";
 
@@ -36,9 +38,15 @@ const navigation = [
     icon: Building2,
   },
   {
+    id: "intelligence" as const,
+    label: "Intelligence",
+    href: "/intelligence",
+    icon: Radar,
+  },
+  {
     id: "execution" as const,
     label: "Execution",
-   href: "/execution",
+    href: "/execution",
     icon: Target,
   },
   {
