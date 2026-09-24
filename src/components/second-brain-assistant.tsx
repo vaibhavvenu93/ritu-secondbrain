@@ -49,7 +49,7 @@ interface BrainEvidence {
 }
 
 interface BrainRecommendation {
-  id?: string;
+  id: string;
   title: string;
   rationale?: string;
   owner?: string;
@@ -79,6 +79,48 @@ interface BrainResponse {
   generatedBy?: string;
 }
 
+interface BrainExecutionPreview {
+  actionId: string;
+
+  status:
+    | "ready"
+    | "already_in_execution"
+    | "needs_review";
+
+  title: string;
+  message: string;
+
+  initiative: {
+    id: string;
+    title: string;
+    owner: string;
+    collaborator?: string;
+    objective: string;
+    deadline: string;
+    nextAction: string;
+    impact?: string;
+    progress: number;
+    health: string;
+  };
+
+  commitments: Array<{
+    label: string;
+    owner: string;
+    dueDate: string;
+  }>;
+
+  provenance: {
+    recommendationId: string;
+    query?: string;
+    mode: "deterministic-demo";
+  };
+}
+
+interface BrainActionState {
+  loading: boolean;
+  preview?: BrainExecutionPreview;
+  error?: string;
+}
 interface ConversationTurn {
   id: number;
   query: string;
@@ -196,6 +238,10 @@ export default function SecondBrainAssistant() {
 
   const [showEvidenceFor, setShowEvidenceFor] =
     useState<number | null>(null);
+
+  const [actions, setActions] = useState<
+    Record<string, BrainActionState>
+  >({});
 
   const bodyRef =
     useRef<HTMLDivElement | null>(null);
@@ -360,6 +406,99 @@ useEffect(() => {
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function executeRecommendation(
+    recommendation: BrainRecommendation,
+    turn: ConversationTurn
+  ) {
+    setActions((current) => ({
+      ...current,
+
+      [recommendation.id]: {
+        loading: true,
+      },
+    }));
+
+    try {
+      const response = await fetch(
+        "/api/brain/action",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+
+          body: JSON.stringify({
+            recommendationId:
+              recommendation.id,
+
+            title:
+              recommendation.title,
+
+            rationale:
+              recommendation.rationale,
+
+            owner:
+              recommendation.owner,
+
+            expectedImpact:
+              recommendation.expectedImpact,
+
+            actionType:
+              recommendation.actionType,
+
+            context: {
+              query:
+                turn.query,
+
+              subjectId:
+                turn.response?.subject?.id,
+
+              subjectName:
+                turn.response?.subject?.name,
+            },
+          }),
+        }
+      );
+
+      const data =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data?.message ??
+            "Action could not be resolved."
+        );
+      }
+
+      setActions((current) => ({
+        ...current,
+
+        [recommendation.id]: {
+          loading: false,
+
+          preview:
+            data.preview as BrainExecutionPreview,
+        },
+      }));
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "I couldn't connect this recommendation to execution.";
+
+      setActions((current) => ({
+        ...current,
+
+        [recommendation.id]: {
+          loading: false,
+          error: message,
+        },
+      }));
     }
   }
 

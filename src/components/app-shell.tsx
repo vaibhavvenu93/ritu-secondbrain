@@ -38,13 +38,13 @@ const navigation = [
   {
     id: "execution" as const,
     label: "Execution",
-    href: "#",
+   href: "/execution",
     icon: Target,
   },
   {
     id: "studio" as const,
     label: "Studio",
-    href: "#",
+    href: "/studio",
     icon: Lightbulb,
   },
 ];
