@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import AppShell from "@/components/app-shell";
+import AskBrainButton from "@/components/ask-brain-button";
 
 import {
   getTodayAttention,
@@ -158,9 +159,7 @@ export default function HomePage() {
               <ArrowRight size={16} />
             </button>
 
-            <button className="secondary-button">
-              Ask anything
-            </button>
+            <AskBrainButton />
           </div>
         </section>
 

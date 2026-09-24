@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import AppShell from "@/components/app-shell";
+import AskBrainButton from "@/components/ask-brain-button";
 
 import {
   getCommercialMap,
@@ -738,12 +739,14 @@ export default function CompanyPage() {
                     the Bihar gap.
                   </p>
 
-                  <button>
-                    Ask why
-                    <ArrowRight
-                      size={14}
-                    />
-                  </button>
+                  <AskBrainButton
+  question="Why is Bihar behind plan?"
+  autoSubmit
+  className="brain-finding-button"
+>
+  Ask why
+  <ArrowRight size={14} />
+</AskBrainButton>
                 </div>
               </article>
             </div>
